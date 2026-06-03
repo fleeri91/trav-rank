@@ -1,18 +1,45 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { BathingWaterResult } from "@/types/BathingWaters/BathingWaterResult";
+import { ATGCalendarDayRoot } from "@/types/ATG/CalendarDay";
+import { ATGGameRoot } from "@/types/ATG/Game";
 
 export const queryKeys = {
-  bathingWaters: ["bathingWaters"],
+  day: ["day"],
+  game: ["game"],
+  rankPoints: ["rankPoints"],
 };
 
-export const useBathingWaters = () => {
+export const useDay = (date: string) => {
   return useQuery({
-    queryKey: queryKeys.bathingWaters,
+    queryKey: queryKeys.day,
     queryFn: async () => {
-      const res = await fetch("/api/bathing-waters");
-      if (!res.ok) throw new Error("Failed to fetch bathing waters");
-      return res.json() as Promise<BathingWaters>;
+      const res = await fetch(`/api/day&date=${date}`);
+      if (!res.ok) throw new Error("Failed to fetch day data");
+      return res.json() as Promise<ATGCalendarDayRoot>;
+    },
+    staleTime: 1000 * 60 * 60 * 24,
+  });
+};
+
+export const useGame = (id: string) => {
+  return useQuery({
+    queryKey: queryKeys.game,
+    queryFn: async () => {
+      const res = await fetch(`/api/game&id=${id}`);
+      if (!res.ok) throw new Error("Failed to fetch game data");
+      return res.json() as Promise<ATGGameRoot>;
+    },
+    staleTime: 1000 * 60 * 60 * 24,
+  });
+};
+
+export const useRankPoints = () => {
+  return useQuery({
+    queryKey: queryKeys.rankPoints,
+    queryFn: async () => {
+      const res = await fetch("/api/rank-points");
+      if (!res.ok) throw new Error("Failed to fetch rank points");
+      return res.json() as Promise<unknown>;
     },
     staleTime: 1000 * 60 * 60 * 24,
   });
