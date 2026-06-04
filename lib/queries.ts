@@ -13,7 +13,7 @@ export const useDay = (date: string) => {
   return useQuery({
     queryKey: queryKeys.day,
     queryFn: async () => {
-      const res = await fetch(`/api/day&date=${date}`);
+      const res = await fetch(`/api/day?date=${date}`);
       if (!res.ok) throw new Error("Failed to fetch day data");
       return res.json() as Promise<ATGCalendarDayRoot>;
     },
@@ -23,13 +23,14 @@ export const useDay = (date: string) => {
 
 export const useGame = (id: string) => {
   return useQuery({
-    queryKey: queryKeys.game,
+    queryKey: [...queryKeys.game, id],
     queryFn: async () => {
-      const res = await fetch(`/api/game&id=${id}`);
+      const res = await fetch(`/api/game?id=${id}`);
       if (!res.ok) throw new Error("Failed to fetch game data");
       return res.json() as Promise<ATGGameRoot>;
     },
     staleTime: 1000 * 60 * 60 * 24,
+    enabled: !!id,
   });
 };
 
