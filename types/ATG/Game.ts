@@ -40,6 +40,12 @@ export interface RaceResult {
   scratchings?: number[]
 }
 
+export interface StartPools {
+  vinnare?: { odds?: number; finalOdds?: number; betDistribution?: number }
+  plats?: { odds?: number; minOdds?: number; maxOdds?: number; betDistribution?: number; finalOdds?: number }
+  [betType: string]: { odds?: number; betDistribution?: number; finalOdds?: number; minOdds?: number; maxOdds?: number } | undefined
+}
+
 export interface Start {
   id: string
   number: number
@@ -48,6 +54,9 @@ export interface Start {
   horse: Horse
   driver: Driver
   result: StartResult
+  pools?: StartPools
+  records?: import('./Record').RecordResult[]
+  originalDriver?: Driver
   videos?: Video[]
   out?: boolean
   scratched?: boolean
