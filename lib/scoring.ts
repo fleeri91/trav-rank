@@ -31,6 +31,7 @@ export interface ScoreBreakdown {
 export interface StartScore {
   startId: string;
   horseName: string;
+  startNumber: number;
   postPosition: number;
   scratched: boolean;
   total: number;
@@ -146,6 +147,7 @@ export function scoreRace(race: Race, currentYear: string): StartScore[] {
       return {
         startId: start.id,
         horseName: start.horse.name,
+        startNumber: start.number,
         postPosition: start.postPosition,
         scratched: true,
         total: 0,
@@ -223,6 +225,7 @@ export function scoreRace(race: Race, currentYear: string): StartScore[] {
     return {
       startId: start.id,
       horseName: start.horse.name,
+      startNumber: start.number,
       postPosition: start.postPosition,
       scratched: false,
       total,
