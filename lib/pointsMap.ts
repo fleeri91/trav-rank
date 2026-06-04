@@ -13,7 +13,7 @@
  *   and   recencyWeight = [1.0, 0.85, 0.70, 0.55, 0.40]
  */
 
-// ─── Group A · Market Intelligence · 38 pts max ──────────────────────────────
+// ─── Group A · Market Intelligence · 22 pts max ──────────────────────────────
 
 /**
  * Win-pool odds rank within the race field (rank 1 = lowest odds / favourite).
@@ -21,13 +21,6 @@
  * Index 0 is unused; index 8+ all receive 2 pts.
  */
 export const ODDS_RANK_POINTS = [0, 22, 17, 12, 8, 6, 4, 2] as const;
-
-/**
- * V75/V86 betDistribution rank within the race field (rank 1 = highest share).
- * Rank 1 wins 23.5 %; rank 2 wins 16.1 %.
- * Index 0 is unused; index 8+ receive 2 pts.
- */
-export const BET_DISTRIBUTION_RANK_POINTS = [0, 16, 12, 8, 6, 5, 3, 2] as const;
 
 // ─── Group B · Recent Form · 20 pts max ──────────────────────────────────────
 
@@ -125,7 +118,7 @@ export const HORSE_WIN_PCT_RANK_POINTS = [0, 5, 4, 3, 2, 1] as const;
  */
 export const POST_POSITION_POINTS = {
   volte: [0, 5, 3, 3, 3, 4, 4, 2, 0, 0, 0, 0, 0, 0, 0, 0] as const,
-  auto:  [0, 5, 5, 5, 5, 5, 5, 3, 1, 1, 1, 3, 3, 1, 1, 1] as const,
+  auto: [0, 5, 5, 5, 5, 5, 5, 3, 1, 1, 1, 3, 3, 1, 1, 1] as const,
 } as const;
 
 // ─── Bonus Signal ─────────────────────────────────────────────────────────────
@@ -140,7 +133,7 @@ export const SHOE_CHANGED_BONUS = 1;
 
 export const POINTS_MAP = {
   oddsRank: ODDS_RANK_POINTS,
-  betDistributionRank: BET_DISTRIBUTION_RANK_POINTS,
+
   formScore: FORM_SCORE_POINTS,
   gallop: GALLOP_POINTS,
   startPointsRank: START_POINTS_RANK_POINTS,
