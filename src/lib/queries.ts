@@ -11,7 +11,7 @@ export const queryKeys = {
 
 export const useDay = (date: string) => {
   return useQuery({
-    queryKey: queryKeys.day,
+    queryKey: [...queryKeys.day, date],
     queryFn: async () => {
       const res = await fetch(`/api/day?date=${date}`);
       if (!res.ok) throw new Error("Failed to fetch day data");

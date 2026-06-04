@@ -5,7 +5,7 @@ import { format, isToday, parseISO } from "date-fns"
 import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { useCalendarStore } from "@/store/useCalendar"
+import { useCalendarStore } from "@/stores/useCalendar"
 
 export function DateSelector() {
   const { selectedDate, setSelectedDate, setPreviousDate, setNextDate } = useCalendarStore()

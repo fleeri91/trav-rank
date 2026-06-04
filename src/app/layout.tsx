@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
 import { Oxanium, Source_Code_Pro } from "next/font/google";
-import "./globals.css";
+import "@/styles/globals.css";
 
 import QueryProvider from "@/providers/query-provider";
-
-import "./globals.css";
 import { ThemeProvider } from "@/providers/theme-provider";
 
 const fontSans = Oxanium({

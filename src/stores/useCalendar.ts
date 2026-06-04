@@ -7,6 +7,7 @@ type CalendarState = {
 };
 
 type CalendarActions = {
+  setSelectedDate: (date: string) => void;
   setPreviousDate: (date: string) => void;
   setNextDate: (date: string) => void;
 };
@@ -19,6 +20,8 @@ const initialState: CalendarState = {
 export const useCalendarStore = create<CalendarState & CalendarActions>(
   (set) => ({
     ...initialState,
+    setSelectedDate: (date: string) =>
+      set((state) => ({ ...state, selectedDate: date })),
     setPreviousDate: (date: string) =>
       set((state) => ({
         ...state,

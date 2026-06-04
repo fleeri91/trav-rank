@@ -7,7 +7,7 @@ import { useGame } from "@/lib/queries";
 import { scoreRace, type StartScore } from "@/lib/scoring";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
-import { Card } from "../ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 // ─── chart config ─────────────────────────────────────────────────────────────

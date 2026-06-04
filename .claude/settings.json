@@ -1,7 +1,29 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python3)"
+      "Bash(python3)",
+      "Bash(mkdir -p src)",
+      "Bash(mv app *)",
+      "Bash(mv components *)",
+      "Bash(mv lib *)",
+      "Bash(mv providers *)",
+      "Bash(mkdir -p src/components/common src/components/sections/rank)",
+      "Bash(mv src/components/date-selector.tsx src/components/common/date-selector.tsx)",
+      "Bash(mv src/components/day-games.tsx src/components/common/day-games.tsx)",
+      "Bash(mv src/components/rank/rank.tsx src/components/sections/rank/rank.tsx)",
+      "Bash(mv src/components/rank/index.ts src/components/sections/rank/index.ts)",
+      "Bash(mkdir -p src/styles)",
+      "Bash(mv src/app/globals.css src/styles/globals.css)",
+      "Bash(mv src/app/favicon.ico public/favicon.ico)",
+      "Bash(mkdir -p public/assets/svgs)",
+      "Bash(mv public/file.svg public/assets/svgs/file.svg)",
+      "Bash(mv public/globe.svg public/assets/svgs/globe.svg)",
+      "Bash(mv public/next.svg public/assets/svgs/next.svg)",
+      "Bash(mv public/vercel.svg public/assets/svgs/vercel.svg)",
+      "Bash(rm -rf .next)",
+      "Bash(npx next *)",
+      "Bash(git stash *)",
+      "Bash(git rm *)"
     ]
   }
 }
