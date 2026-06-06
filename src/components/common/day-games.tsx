@@ -2,127 +2,63 @@
 
 import Link from "next/link"
 import { format, parseISO } from "date-fns"
-import { ChevronRight, Zap } from "lucide-react"
 
 import { useDay } from "@/lib/queries"
 import { useCalendarStore } from "@/stores/useCalendar"
-import { type Game, type Track } from "@/types/ATG/CalendarDay"
+import { GAME_COLORS } from "@/lib/game-colors"
+import { type Game } from "@/types/ATG/CalendarDay"
 
-// ─── config ───────────────────────────────────────────────────────────────────
-
-const GAME_ORDER = ["V86", "V85", "GS75", "V65", "V64", "V5", "V4", "dd", "ld"]
-
-const GAME_META: Record<string, { label: string; textClass: string; borderClass: string }> = {
-  V86:  { label: "V86",           textClass: "text-primary",   borderClass: "border-l-primary" },
-  V85:  { label: "V85",           textClass: "text-primary",   borderClass: "border-l-primary" },
-  GS75: { label: "GS75",          textClass: "text-primary",   borderClass: "border-l-primary" },
-  V65:  { label: "V65",           textClass: "text-secondary", borderClass: "border-l-secondary" },
-  V64:  { label: "V64",           textClass: "text-secondary", borderClass: "border-l-secondary" },
-  V5:   { label: "V5",            textClass: "text-accent",    borderClass: "border-l-accent" },
-  V4:   { label: "V4",            textClass: "text-accent",    borderClass: "border-l-accent" },
-  dd:   { label: "Dagens Dubbel", textClass: "text-accent",    borderClass: "border-l-accent" },
-  ld:   { label: "Lunchdubbeln",  textClass: "text-accent",    borderClass: "border-l-accent" },
+const COUNTRY_FLAGS: Record<string, string> = {
+  SE: "🇸🇪",
+  NO: "🇳🇴",
+  FI: "🇫🇮",
+  FR: "🇫🇷",
+  DK: "🇩🇰",
+  DE: "🇩🇪",
+  IT: "🇮🇹",
+  AU: "🇦🇺",
+  US: "🇺🇸",
+  GB: "🇬🇧",
 }
 
-const FALLBACK_META = { label: "", textClass: "text-foreground", borderClass: "border-l-border" }
+const GAME_ORDER = ["V86", "V85", "GS75", "V65", "V64", "V5", "V4", "V3", "dd", "ld"]
 
-// ─── helpers ──────────────────────────────────────────────────────────────────
 
-function sortGameTypes(entries: [string, Game[]][]) {
-  return [...entries].sort(([a], [b]) => {
-    const ai = GAME_ORDER.indexOf(a)
-    const bi = GAME_ORDER.indexOf(b)
-    if (ai === -1 && bi === -1) return a.localeCompare(b)
-    if (ai === -1) return 1
-    if (bi === -1) return -1
-    return ai - bi
-  })
-}
-
-function formatAmount(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(".0", "")}M`
-  if (n >= 1_000) return `${Math.round(n / 1_000)}k`
-  return String(n)
-}
-
-function statusDotClass(status: string) {
-  const s = status.toLowerCase()
-  if (s === "open" || s === "active") return "bg-secondary animate-pulse"
-  if (s === "results" || s === "finished") return "bg-muted-foreground/50"
-  if (s === "cancelled") return "bg-destructive"
-  return "bg-muted-foreground/30"
-}
-
-// ─── sub-components ───────────────────────────────────────────────────────────
-
-function SectionHeader({ gameType, count }: { gameType: string; count: number }) {
-  const meta = GAME_META[gameType] ?? { ...FALLBACK_META, label: gameType.toUpperCase() }
-  return (
-    <div className={`flex items-baseline gap-3 border-l-4 bg-card px-5 py-3 mt-px ${meta.borderClass}`}>
-      <span className={`text-xl font-bold ${meta.textClass}`}>{meta.label}</span>
-      <span className="text-xs text-muted-foreground">
-        {count} {count === 1 ? "round" : "rounds"}
-      </span>
-    </div>
-  )
-}
-
-function GameRow({ game, trackMap }: { game: Game; trackMap: Map<number, Track> }) {
-  const startTime = format(parseISO(game.startTime), "HH:mm")
-  const trackNames = game.tracks.map((id) => trackMap.get(id)?.name ?? id).join("  ·  ")
-  const jackpot = game.jackpotAmount > 0 ? formatAmount(game.jackpotAmount) : null
-  const estimated = !jackpot && game.estimatedJackpot > 50_000 ? formatAmount(game.estimatedJackpot) : null
-
+function GameBadge({ game, gameType }: { game: Game; gameType: string }) {
   return (
     <Link
       href={`/game/${game.id}`}
-      className="group flex items-center gap-5 border-b px-5 py-4 hover:bg-muted transition-colors"
+      className="flex h-10 w-10 items-center justify-center rounded text-xs font-bold text-white uppercase select-none transition-all hover:-translate-y-0.5 hover:brightness-110"
+      style={{ background: GAME_COLORS[gameType] ?? "var(--muted-foreground)" }}
     >
-      <span className="w-10 shrink-0 font-mono text-sm tabular-nums text-muted-foreground">
-        {startTime}
-      </span>
-
-      <span className="min-w-0 flex-1 truncate text-sm font-medium">{trackNames}</span>
-
-      {jackpot && (
-        <span className="flex shrink-0 items-center gap-1 text-xs font-bold text-primary">
-          <Zap className="size-3" />
-          {jackpot} kr
-        </span>
-      )}
-      {estimated && (
-        <span className="shrink-0 text-xs text-muted-foreground">est. {estimated} kr</span>
-      )}
-
-      <span
-        className={`size-2 shrink-0 rounded-full ${statusDotClass(game.status)}`}
-        title={game.status}
-      />
-
-      <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground" />
+      {gameType}
     </Link>
   )
 }
 
-function SkeletonSection() {
+function SkeletonRows() {
   return (
-    <div>
-      <div className="border-l-4 border-l-muted bg-card px-5 py-3 mt-px">
-        <div className="h-5 w-12 animate-pulse bg-muted" />
-      </div>
-      {[1, 2].map((i) => (
-        <div key={i} className="flex items-center gap-5 border-b px-5 py-4">
-          <div className="h-4 w-10 animate-pulse bg-muted" />
-          <div className="h-4 flex-1 animate-pulse bg-muted" />
-          <div className="size-2 animate-pulse rounded-full bg-muted" />
-          <div className="size-4 animate-pulse bg-muted" />
-        </div>
+    <>
+      {[3, 2, 4, 2].map((count, i) => (
+        <tr key={i} className="border-b">
+          <td className="w-48 px-5 py-4">
+            <div className="flex flex-col gap-1.5">
+              <div className="h-4 w-32 animate-pulse rounded bg-muted" />
+              <div className="h-3 w-12 animate-pulse rounded bg-muted" />
+            </div>
+          </td>
+          <td className="px-5 py-4">
+            <div className="flex gap-2">
+              {Array.from({ length: count }).map((_, j) => (
+                <div key={j} className="h-10 w-10 animate-pulse rounded bg-muted" />
+              ))}
+            </div>
+          </td>
+        </tr>
       ))}
-    </div>
+    </>
   )
 }
-
-// ─── main ─────────────────────────────────────────────────────────────────────
 
 export function DayGames() {
   const { selectedDate } = useCalendarStore()
@@ -130,11 +66,11 @@ export function DayGames() {
 
   if (isLoading) {
     return (
-      <div>
-        <SkeletonSection />
-        <SkeletonSection />
-        <SkeletonSection />
-      </div>
+      <table className="w-full">
+        <tbody>
+          <SkeletonRows />
+        </tbody>
+      </table>
     )
   }
 
@@ -146,9 +82,7 @@ export function DayGames() {
     )
   }
 
-  const entries = Object.entries(data.games ?? {})
-
-  if (!entries.length) {
+  if (!data.tracks.length) {
     return (
       <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
         No games scheduled for this day.
@@ -156,19 +90,43 @@ export function DayGames() {
     )
   }
 
-  const trackMap = new Map(data.tracks.map((t) => [t.id, t]))
-  const sorted = sortGameTypes(entries)
-
   return (
-    <div>
-      {sorted.map(([gameType, games]) => (
-        <div key={gameType}>
-          <SectionHeader gameType={gameType} count={games.length} />
-          {games.map((game) => (
-            <GameRow key={game.id} game={game} trackMap={trackMap} />
-          ))}
-        </div>
-      ))}
-    </div>
+    <table className="w-full">
+      <tbody>
+        {data.tracks.map((track) => {
+          const flag = COUNTRY_FLAGS[track.countryCode] ?? ""
+          const startTime = format(parseISO(track.startTime), "HH:mm")
+
+          const badges = GAME_ORDER.flatMap((gameType) =>
+            (data.games[gameType] ?? [])
+              .filter((game) => game.tracks.includes(track.id))
+              .map((game) => (
+                <GameBadge key={`${game.id}-${gameType}`} game={game} gameType={gameType} />
+              ))
+          )
+
+          if (!badges.length) return null
+
+          return (
+            <tr key={track.id} className="border-b">
+              <td className="w-48 px-5 py-4 align-middle">
+                <div className="flex flex-col gap-0.5">
+                  <span className="flex items-center gap-1.5 text-sm font-semibold">
+                    {flag && <span>{flag}</span>}
+                    {track.name}
+                  </span>
+                  <span className="font-mono text-xs text-muted-foreground">{startTime}</span>
+                </div>
+              </td>
+              <td className="px-5 py-4 align-middle">
+                <div className="flex flex-wrap gap-2">
+                  {badges}
+                </div>
+              </td>
+            </tr>
+          )
+        })}
+      </tbody>
+    </table>
   )
 }

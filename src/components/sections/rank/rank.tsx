@@ -5,6 +5,7 @@ import { Bar, BarChart, Cell, XAxis, YAxis, Tooltip } from "recharts";
 
 import { useGame } from "@/lib/queries";
 import { scoreRace, type StartScore } from "@/lib/scoring";
+import { GAME_COLORS } from "@/lib/game-colors";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
 import { Card } from "@/components/ui/card";
@@ -106,40 +107,47 @@ function ScoreTooltip({
 
 // ─── custom y-axis tick with badge ───────────────────────────────────────────
 
-function CustomYTick({
-  x,
-  y,
-  payload,
-  width,
-}: {
-  x?: number;
-  y?: number;
-  payload?: { value: string };
-  width?: number;
-}) {
-  const value = payload?.value ?? "";
-  const spaceIdx = value.indexOf(" ");
-  const startNum = spaceIdx >= 0 ? value.slice(0, spaceIdx) : value;
-  const horseName = spaceIdx >= 0 ? value.slice(spaceIdx + 1) : "";
-  const fo_x = (x ?? 0) - (width ?? 0) + 4;
-  const fo_w = (width ?? 0) - 8;
-  const fo_h = 24;
+function makeYTick(color: string) {
+  return function YTick({
+    x,
+    y,
+    payload,
+    width,
+  }: {
+    x?: number;
+    y?: number;
+    payload?: { value: string };
+    width?: number;
+  }) {
+    const value = payload?.value ?? "";
+    const spaceIdx = value.indexOf(" ");
+    const startNum = spaceIdx >= 0 ? value.slice(0, spaceIdx) : value;
+    const horseName = spaceIdx >= 0 ? value.slice(spaceIdx + 1) : "";
+    const fo_x = (x ?? 0) - (width ?? 0) + 4;
+    const fo_w = (width ?? 0) - 8;
+    const fo_h = 24;
 
-  return (
-    <foreignObject x={fo_x} y={(y ?? 0) - fo_h / 2} width={fo_w} height={fo_h}>
-      <div className="flex h-full items-center gap-1.5 overflow-hidden ml-1">
-        <Badge className="shrink-0 rounded-full h-6 w-6 flex items-center justify-center">
-          {startNum}
-        </Badge>
-        <span className="truncate text-xs text-foreground">{horseName}</span>
-      </div>
-    </foreignObject>
-  );
+    return (
+      <foreignObject x={fo_x} y={(y ?? 0) - fo_h / 2} width={fo_w} height={fo_h}>
+        <div className="flex h-full items-center gap-1.5 overflow-hidden ml-1">
+          <Badge
+            className="shrink-0 rounded-full h-6 w-6 flex items-center justify-center border-0 text-white"
+            style={{ background: color }}
+          >
+            {startNum}
+          </Badge>
+          <span className="truncate text-xs text-foreground">{horseName}</span>
+        </div>
+      </foreignObject>
+    );
+  };
 }
 
 // ─── per-race chart ───────────────────────────────────────────────────────────
 
-function RaceRank({ scores }: { scores: StartScore[] }) {
+function RaceRank({ scores, color }: { scores: StartScore[]; color: string }) {
+  const YTick = useMemo(() => makeYTick(color), [color]);
+
   const chartData = useMemo(
     () =>
       [...scores]
@@ -182,7 +190,7 @@ function RaceRank({ scores }: { scores: StartScore[] }) {
             dataKey="label"
             type="category"
             width={yAxisWidth}
-            tick={<CustomYTick />}
+            tick={<YTick />}
             tickLine={false}
             axisLine={false}
           />
@@ -211,6 +219,8 @@ interface RankProps {
 
 export default function Rank({ gameId }: RankProps) {
   const { data, isLoading, isError } = useGame(gameId);
+
+  const color = GAME_COLORS[data?.type ?? ""] ?? "var(--primary)";
 
   const racesWithScores = useMemo(() => {
     if (!data?.races) return [];
@@ -264,7 +274,7 @@ export default function Rank({ gameId }: RankProps) {
                 {race.distance} m · {race.startMethod} · {race.track?.condition}
               </p>
             </div>
-            <RaceRank scores={scores} />
+            <RaceRank scores={scores} color={color} />
           </TabsContent>
         ))}
       </Tabs>
