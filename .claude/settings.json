@@ -23,7 +23,8 @@
       "Bash(rm -rf .next)",
       "Bash(npx next *)",
       "Bash(git stash *)",
-      "Bash(git rm *)"
+      "Bash(git rm *)",
+      "Bash(grep -v \"^$\")"
     ]
   }
 }
