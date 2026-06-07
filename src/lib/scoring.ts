@@ -1,5 +1,5 @@
 import type { RecordResult } from "@/types/ATG/Record";
-import type { Start, Race } from "@/types/ATG/Game";
+import type { Start, Race, Horse } from "@/types/ATG/Game";
 import {
   ODDS_RANK_POINTS,
   FORM_SCORE_POINTS,
@@ -11,7 +11,13 @@ import {
   TRAINER_WIN_PCT_POINTS,
   HORSE_WIN_PCT_RANK_POINTS,
   POST_POSITION_POINTS,
+  KM_TIME_RANK_POINTS,
+  RECORD_PLACE_POINTS,
+  CONDITION_FORM_SCORE_POINTS,
   SHOE_CHANGED_BONUS,
+  DRIVER_UPGRADE_BONUS,
+  DRIVER_UPGRADE_WIN_PCT_THRESHOLD,
+  DRIVER_UPGRADE_MIN_STARTS,
 } from "@/lib/pointsMap";
 
 export interface ScoreBreakdown {
@@ -22,9 +28,13 @@ export interface ScoreBreakdown {
   earningsPerStart: number;
   driverWinPct: number;
   driverChanged: number;
+  driverUpgrade: number;
   trainerWinPct: number;
   horseWinPct: number;
   postPosition: number;
+  kmTimeRank: number;
+  recordPlace: number;
+  conditionForm: number;
   shoeChanged: number;
 }
 
@@ -93,6 +103,84 @@ function getPoolOdds(start: Start): number {
   return start.pools?.vinnare?.odds ?? 999_999;
 }
 
+function distCategory(meters: number): "short" | "medium" | "long" {
+  if (meters <= 1800) return "short";
+  if (meters <= 2400) return "medium";
+  return "long";
+}
+
+function timeToSecs(t: { minutes: number; seconds: number; tenths: number }): number {
+  return t.minutes * 60 + t.seconds + t.tenths / 10;
+}
+
+function getMatchingLifeRecord(
+  horse: Horse,
+  distCat: string,
+  startMethod: string
+) {
+  return horse.statistics?.life?.records?.find(
+    (r) => r.distance === distCat && r.startMethod === startMethod
+  );
+}
+
+function buildKmTimeRankMap(
+  active: Start[],
+  distCat: string,
+  startMethod: string
+): RankMap {
+  const withTime = active
+    .map((s) => {
+      const rec = getMatchingLifeRecord(s.horse, distCat, startMethod);
+      return rec ? { id: s.id, secs: timeToSecs(rec.time) } : null;
+    })
+    .filter((x): x is { id: string; secs: number } => x !== null);
+
+  withTime.sort((a, b) => a.secs - b.secs);
+  const map: RankMap = new Map();
+  withTime.forEach((x, i) => map.set(x.id, i + 1));
+  return map;
+}
+
+function computeConditionFormScore(
+  records: RecordResult[],
+  distCat: string,
+  startMethod: string
+): number {
+  const weights = [1.0, 0.85, 0.7, 0.55, 0.4];
+  const matching = records.filter(
+    (r) =>
+      r.race.startMethod === startMethod &&
+      distCategory(r.start.distance) === distCat
+  );
+  return matching.slice(0, 5).reduce((sum, rec, i) => {
+    if (rec.galloped || rec.disqualified) return sum;
+    const place = parseInt(String(rec.place), 10);
+    const pts =
+      place === 1 ? 5 : place === 2 ? 3 : place === 3 ? 2 : place === 4 ? 1 : 0;
+    return sum + pts * weights[i];
+  }, 0);
+}
+
+
+function computeDriverUpgradeBonus(
+  start: Start,
+  records: RecordResult[],
+  currentYear: string
+): number {
+  if (start.originalDriver) return 0;
+  if (records.length === 0) return 0;
+
+  const recentDriverId = records[0].start?.driver?.id;
+  if (!recentDriverId || recentDriverId === start.driver.id) return 0;
+
+  const wp = (yearStats(start.driver.statistics as any, currentYear)?.winPercentage ?? 0) / 100;
+  const starts = yearStats(start.driver.statistics as any, currentYear)?.starts ?? 0;
+
+  if (starts < DRIVER_UPGRADE_MIN_STARTS) return 0;
+  if (wp < DRIVER_UPGRADE_WIN_PCT_THRESHOLD) return 0;
+
+  return DRIVER_UPGRADE_BONUS;
+}
 
 function yearStats(
   stats: { years: Record<string, { winPercentage: number; starts: number }> } | undefined,
@@ -142,6 +230,9 @@ export function scoreRace(race: Race, currentYear: string): StartScore[] {
     race.startMethod === "volte" ? "volte" : "auto";
   const ppTable = POST_POSITION_POINTS[smKey];
 
+  const distCat = distCategory(race.distance);
+  const kmTimeRankMap = buildKmTimeRankMap(active, distCat, race.startMethod);
+
   return race.starts.map((start): StartScore => {
     if (start.scratched || start.out) {
       return {
@@ -154,8 +245,9 @@ export function scoreRace(race: Race, currentYear: string): StartScore[] {
         breakdown: {
           oddsRank: 0, formScore: 0, gallop: 0,
           startPoints: 0, earningsPerStart: 0, driverWinPct: 0,
-          driverChanged: 0, trainerWinPct: 0, horseWinPct: 0,
-          postPosition: 0, shoeChanged: 0,
+          driverChanged: 0, driverUpgrade: 0, trainerWinPct: 0, horseWinPct: 0,
+          postPosition: 0, kmTimeRank: 0, recordPlace: 0,
+          conditionForm: 0, shoeChanged: 0,
         },
       };
     }
@@ -189,6 +281,7 @@ export function scoreRace(race: Race, currentYear: string): StartScore[] {
     const driverWp = (yearStats(start.driver.statistics as any, currentYear)?.winPercentage ?? 0) / 100;
     const driverWpPts = thresholdLookup(driverWp, DRIVER_WIN_PCT_POINTS);
     const driverChangedPts = start.originalDriver ? DRIVER_CHANGED_PENALTY : 0;
+    const driverUpgradePts = computeDriverUpgradeBonus(start, records, currentYear);
 
     const trainerWp = (yearStats(start.horse.trainer.statistics as any, currentYear)?.winPercentage ?? 0) / 100;
     const trainerWpPts = thresholdLookup(trainerWp, TRAINER_WIN_PCT_POINTS);
@@ -199,6 +292,22 @@ export function scoreRace(race: Race, currentYear: string): StartScore[] {
     // F – Post position
     const pp = Math.min(start.postPosition, ppTable.length - 1);
     const ppPts = ppTable[pp] ?? 0;
+
+    // G – Record quality at matching conditions
+    const kmRank = kmTimeRankMap.get(start.id);
+    const kmTimeRankPts = kmRank !== undefined
+      ? rankLookup(kmRank, KM_TIME_RANK_POINTS)
+      : 0;
+
+    const matchingLifeRec = getMatchingLifeRecord(start.horse, distCat, race.startMethod);
+    const recPlaceRaw = matchingLifeRec?.place ?? -1;
+    const recPlacePts = recPlaceRaw >= 0
+      ? (RECORD_PLACE_POINTS[Math.min(recPlaceRaw, RECORD_PLACE_POINTS.length - 1)] ?? 1)
+      : 0;
+
+    // H – Condition-specific form score
+    const condFormRaw = computeConditionFormScore(records, distCat, race.startMethod);
+    const condFormPts = thresholdLookup(condFormRaw, CONDITION_FORM_SCORE_POINTS);
 
     // Bonus
     const shoePts = computeShoeBonus(start, records);
@@ -211,9 +320,13 @@ export function scoreRace(race: Race, currentYear: string): StartScore[] {
       earningsPerStart: epsPts,
       driverWinPct: driverWpPts,
       driverChanged: driverChangedPts,
+      driverUpgrade: driverUpgradePts,
       trainerWinPct: trainerWpPts,
       horseWinPct: hwpPts,
       postPosition: ppPts,
+      kmTimeRank: kmTimeRankPts,
+      recordPlace: recPlacePts,
+      conditionForm: condFormPts,
       shoeChanged: shoePts,
     };
 

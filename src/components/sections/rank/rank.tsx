@@ -13,21 +13,23 @@ import { Badge } from "@/components/ui/badge";
 
 // ─── chart config ─────────────────────────────────────────────────────────────
 
+const MAX_SCORE = 105; // 104 pts + 1 bonus
+
 const chartConfig = {
-  total: { label: "Score" },
+  pct: { label: "Score %" },
 } satisfies ChartConfig;
 
-function barColor(total: number): string {
-  if (total >= 70) return "var(--chart-2)"; // green
-  if (total >= 50) return "var(--chart-3)"; // blue
-  if (total >= 35) return "var(--chart-4)"; // yellow
+function barColor(pct: number): string {
+  if (pct >= 70) return "var(--chart-2)"; // green
+  if (pct >= 50) return "var(--chart-3)"; // blue
+  if (pct >= 35) return "var(--chart-4)"; // yellow
   return "var(--chart-1)"; // red
 }
 
 // ─── tooltip ─────────────────────────────────────────────────────────────────
 
 interface TooltipPayload {
-  payload: StartScore & { label: string };
+  payload: StartScore & { label: string; pct: number };
 }
 
 function ScoreTooltip({
@@ -45,7 +47,7 @@ function ScoreTooltip({
       <p className="font-semibold text-sm">
         {d.horseName} (PP {d.postPosition})
       </p>
-      <p className="font-bold text-base">Total: {d.total} pts</p>
+      <p className="font-bold text-base">Score: {d.pct}%</p>
       <hr className="my-1" />
       <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-muted-foreground">
         <span>Odds rank</span>{" "}
@@ -80,6 +82,14 @@ function ScoreTooltip({
             </span>
           </>
         )}
+        {b.driverUpgrade > 0 && (
+          <>
+            <span>Driver upgrade</span>
+            <span className="text-right font-medium text-foreground">
+              +{b.driverUpgrade}
+            </span>
+          </>
+        )}
         <span>Trainer win%</span>{" "}
         <span className="text-right font-medium text-foreground">
           {b.trainerWinPct}
@@ -91,6 +101,18 @@ function ScoreTooltip({
         <span>Post position</span>{" "}
         <span className="text-right font-medium text-foreground">
           {b.postPosition}
+        </span>
+        <span>Km-time rank</span>{" "}
+        <span className="text-right font-medium text-foreground">
+          {b.kmTimeRank}
+        </span>
+        <span>Record place</span>{" "}
+        <span className="text-right font-medium text-foreground">
+          {b.recordPlace}
+        </span>
+        <span>Cond. form</span>{" "}
+        <span className="text-right font-medium text-foreground">
+          {b.conditionForm}
         </span>
         {b.shoeChanged > 0 && (
           <>
@@ -156,6 +178,7 @@ function RaceRank({ scores, color }: { scores: StartScore[]; color: string }) {
         .map((s) => ({
           ...s,
           label: `${s.startNumber} ${s.horseName}`,
+          pct: Math.round((s.total / MAX_SCORE) * 100),
         })),
     [scores],
   );
@@ -200,9 +223,9 @@ function RaceRank({ scores, color }: { scores: StartScore[]; color: string }) {
             cursor={{ fill: "transparent" }}
           />
           */}
-          <Bar dataKey="total" radius={[0, 4, 4, 0]} maxBarSize={24}>
+          <Bar dataKey="pct" radius={[0, 4, 4, 0]} maxBarSize={24}>
             {chartData.map((entry) => (
-              <Cell key={entry.startId} fill={barColor(entry.total)} />
+              <Cell key={entry.startId} fill={barColor(entry.pct)} />
             ))}
           </Bar>
         </BarChart>
