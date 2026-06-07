@@ -24,7 +24,9 @@
       "Bash(npx next *)",
       "Bash(git stash *)",
       "Bash(git rm *)",
-      "Bash(grep -v \"^$\")"
+      "Bash(grep -v \"^$\")",
+      "Bash(python3 -c ' *)",
+      "Bash(xargs ls -la)"
     ]
   }
 }
