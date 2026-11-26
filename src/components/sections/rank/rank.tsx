@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo } from "react";
-import { Bar, BarChart, Cell, XAxis, YAxis, Tooltip } from "recharts";
+import { Bar, BarChart, Cell, XAxis, YAxis } from "recharts";
 
-import { useGame } from "@/lib/queries";
-import { scoreRace, type StartScore } from "@/lib/scoring";
+import { useGame, type RaceWithScores } from "@/lib/queries";
+import { type StartScore } from "@/lib/scoring";
 import { GAME_COLORS } from "@/lib/game-colors";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 
 // ─── chart config ─────────────────────────────────────────────────────────────
 
-const MAX_SCORE = 105; // 104 pts + 1 bonus
+const MAX_SCORE = 101; // OR14+FS14+CF18+SP12+EP6+HW5+KR5+DW8+TW6+PP5+RP3+GC5
 
 const chartConfig = {
   pct: { label: "Score %" },
@@ -24,107 +24,6 @@ function barColor(pct: number): string {
   if (pct >= 50) return "var(--chart-3)"; // blue
   if (pct >= 35) return "var(--chart-4)"; // yellow
   return "var(--chart-1)"; // red
-}
-
-// ─── tooltip ─────────────────────────────────────────────────────────────────
-
-interface TooltipPayload {
-  payload: StartScore & { label: string; pct: number };
-}
-
-function ScoreTooltip({
-  active,
-  payload,
-}: {
-  active?: boolean;
-  payload?: TooltipPayload[];
-}) {
-  if (!active || !payload?.length) return null;
-  const d = payload[0].payload;
-  const b = d.breakdown;
-  return (
-    <div className="rounded-lg border bg-background p-3 text-xs shadow-md space-y-1 min-w-48">
-      <p className="font-semibold text-sm">
-        {d.horseName} (PP {d.postPosition})
-      </p>
-      <p className="font-bold text-base">Score: {d.pct}%</p>
-      <hr className="my-1" />
-      <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-muted-foreground">
-        <span>Odds rank</span>{" "}
-        <span className="text-right font-medium text-foreground">
-          {b.oddsRank}
-        </span>
-        <span>Form score</span>{" "}
-        <span className="text-right font-medium text-foreground">
-          {b.formScore}
-        </span>
-        <span>Gallop-free</span>{" "}
-        <span className="text-right font-medium text-foreground">
-          {b.gallop}
-        </span>
-        <span>Start points</span>{" "}
-        <span className="text-right font-medium text-foreground">
-          {b.startPoints}
-        </span>
-        <span>Earnings/start</span>{" "}
-        <span className="text-right font-medium text-foreground">
-          {b.earningsPerStart}
-        </span>
-        <span>Driver win%</span>{" "}
-        <span className="text-right font-medium text-foreground">
-          {b.driverWinPct}
-        </span>
-        {b.driverChanged !== 0 && (
-          <>
-            <span>Driver changed</span>
-            <span className="text-right font-medium text-destructive">
-              {b.driverChanged}
-            </span>
-          </>
-        )}
-        {b.driverUpgrade > 0 && (
-          <>
-            <span>Driver upgrade</span>
-            <span className="text-right font-medium text-foreground">
-              +{b.driverUpgrade}
-            </span>
-          </>
-        )}
-        <span>Trainer win%</span>{" "}
-        <span className="text-right font-medium text-foreground">
-          {b.trainerWinPct}
-        </span>
-        <span>Career win%</span>{" "}
-        <span className="text-right font-medium text-foreground">
-          {b.horseWinPct}
-        </span>
-        <span>Post position</span>{" "}
-        <span className="text-right font-medium text-foreground">
-          {b.postPosition}
-        </span>
-        <span>Km-time rank</span>{" "}
-        <span className="text-right font-medium text-foreground">
-          {b.kmTimeRank}
-        </span>
-        <span>Record place</span>{" "}
-        <span className="text-right font-medium text-foreground">
-          {b.recordPlace}
-        </span>
-        <span>Cond. form</span>{" "}
-        <span className="text-right font-medium text-foreground">
-          {b.conditionForm}
-        </span>
-        {b.shoeChanged > 0 && (
-          <>
-            <span>Shoe changed</span>
-            <span className="text-right font-medium text-foreground">
-              +{b.shoeChanged}
-            </span>
-          </>
-        )}
-      </div>
-    </div>
-  );
 }
 
 // ─── custom y-axis tick with badge ───────────────────────────────────────────
@@ -150,7 +49,12 @@ function makeYTick(color: string) {
     const fo_h = 24;
 
     return (
-      <foreignObject x={fo_x} y={(y ?? 0) - fo_h / 2} width={fo_w} height={fo_h}>
+      <foreignObject
+        x={fo_x}
+        y={(y ?? 0) - fo_h / 2}
+        width={fo_w}
+        height={fo_h}
+      >
         <div className="flex h-full items-center gap-1.5 overflow-hidden ml-1">
           <Badge
             className="shrink-0 rounded-full h-6 w-6 flex items-center justify-center border-0 text-white"
@@ -167,12 +71,18 @@ function makeYTick(color: string) {
 
 // ─── per-race chart ───────────────────────────────────────────────────────────
 
-function RaceRank({ scores, color }: { scores: StartScore[]; color: string }) {
+function RaceRank({
+  scores,
+  color,
+}: {
+  scores: StartScore[] | undefined;
+  color: string;
+}) {
   const YTick = useMemo(() => makeYTick(color), [color]);
 
   const chartData = useMemo(
     () =>
-      [...scores]
+      [...(scores ?? [])]
         .filter((s) => !s.scratched)
         .sort((a, b) => b.total - a.total)
         .map((s) => ({
@@ -245,14 +155,7 @@ export default function Rank({ gameId }: RankProps) {
 
   const color = GAME_COLORS[data?.type ?? ""] ?? "var(--primary)";
 
-  const racesWithScores = useMemo(() => {
-    if (!data?.races) return [];
-    return data.races.map((race) => {
-      const year =
-        race.date?.slice(0, 4) ?? new Date().getFullYear().toString();
-      return { race, scores: scoreRace(race, year) };
-    });
-  }, [data]);
+  const racesWithScores: RaceWithScores[] = data?.races ?? [];
 
   if (!gameId) {
     return (
@@ -280,16 +183,16 @@ export default function Rank({ gameId }: RankProps) {
 
   return (
     <div className="p-4">
-      <Tabs defaultValue={racesWithScores[0]?.race.id} className="flex-col">
+      <Tabs defaultValue={racesWithScores[0]?.id} className="flex-col">
         <TabsList className="flex-wrap h-auto gap-1 mb-4">
-          {racesWithScores.map(({ race }, index) => (
+          {racesWithScores.map((race, index) => (
             <TabsTrigger key={race.id} value={race.id}>
               {data.type} : {index + 1}
             </TabsTrigger>
           ))}
         </TabsList>
 
-        {racesWithScores.map(({ race, scores }) => (
+        {racesWithScores.map((race) => (
           <TabsContent key={race.id} value={race.id}>
             <div className="mb-2">
               <p className="text-sm font-medium">{race.name}</p>
@@ -297,7 +200,7 @@ export default function Rank({ gameId }: RankProps) {
                 {race.distance} m · {race.startMethod} · {race.track?.condition}
               </p>
             </div>
-            <RaceRank scores={scores} color={color} />
+            <RaceRank scores={race.scores} color={color} />
           </TabsContent>
         ))}
       </Tabs>

@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from "next/server";
 import { ATGGameRoot } from "@/types/ATG/Game";
 import { ATGStartRoot } from "@/types/ATG/Start";
+import { scoreRace, type StartScore } from "@/lib/scoring";
 import dayjs from "dayjs";
 
 const API_URL = process.env.API_URL;
@@ -53,7 +54,13 @@ export async function GET(request: NextRequest) {
       }),
     );
 
-    return NextResponse.json({ ...gameData, races });
+    const racesWithScores = races.map((race) => {
+      const year = race.date?.slice(0, 4) ?? new Date().getFullYear().toString();
+      const scores: StartScore[] = scoreRace(race, year);
+      return { ...race, scores };
+    });
+
+    return NextResponse.json({ ...gameData, races: racesWithScores });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });

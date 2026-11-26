@@ -2,6 +2,15 @@ import { useQuery } from "@tanstack/react-query";
 
 import { ATGCalendarDayRoot } from "@/types/ATG/CalendarDay";
 import { ATGGameRoot } from "@/types/ATG/Game";
+import { type StartScore } from "@/lib/scoring";
+
+export type RaceWithScores = ATGGameRoot["races"][number] & {
+  scores: StartScore[];
+};
+
+export type GameWithScores = Omit<ATGGameRoot, "races"> & {
+  races: RaceWithScores[];
+};
 
 export const queryKeys = {
   day: ["day"],
@@ -27,7 +36,7 @@ export const useGame = (id: string) => {
     queryFn: async () => {
       const res = await fetch(`/api/game?id=${id}`);
       if (!res.ok) throw new Error("Failed to fetch game data");
-      return res.json() as Promise<ATGGameRoot>;
+      return res.json() as Promise<GameWithScores>;
     },
     staleTime: 1000 * 60 * 60 * 24,
     enabled: !!id,
