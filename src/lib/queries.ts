@@ -3,9 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { ATGCalendarDayRoot } from "@/types/ATG/CalendarDay";
 import { ATGGameRoot } from "@/types/ATG/Game";
 import { type StartScore } from "@/lib/scoring";
+import { type TravankanScore } from "@/lib/travankanScoring";
 
 export type RaceWithScores = ATGGameRoot["races"][number] & {
   scores: StartScore[];
+  travankanScores: TravankanScore[];
 };
 
 export type GameWithScores = Omit<ATGGameRoot, "races"> & {

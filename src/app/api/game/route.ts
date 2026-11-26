@@ -2,6 +2,10 @@ import { NextResponse, NextRequest } from "next/server";
 import { ATGGameRoot } from "@/types/ATG/Game";
 import { ATGStartRoot } from "@/types/ATG/Start";
 import { scoreRace, type StartScore } from "@/lib/scoring";
+import {
+  scoreRaceTravankan,
+  type TravankanScore,
+} from "@/lib/travankanScoring";
 import dayjs from "dayjs";
 
 const API_URL = process.env.API_URL;
@@ -42,15 +46,26 @@ export async function GET(request: NextRequest) {
           raceStarts.map((s) => [s.startNumber, s]),
         );
 
+        const rawRecords = (startNumber: number) =>
+          startsById[startNumber]?.horse?.results?.records ?? [];
+
         const starts = race.starts.map((start) => {
-          const records = (
-            startsById[start.number]?.horse?.results?.records ?? []
-          ).filter((record) => isRecentValidRecord(record, race.sport));
+          const records = rawRecords(start.number).filter((record) =>
+            isRecentValidRecord(record, race.sport),
+          );
 
           return { ...start, records };
         });
 
-        return { ...race, starts };
+        // Travankan rules need the unfiltered history (disqualified starts
+        // count, best time is all-time), so score it here and only return
+        // the result.
+        const travankanScores: TravankanScore[] = scoreRaceTravankan(
+          race,
+          rawRecords,
+        );
+
+        return { ...race, starts, travankanScores };
       }),
     );
 

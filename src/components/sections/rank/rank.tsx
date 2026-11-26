@@ -1,10 +1,10 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Bar, BarChart, Cell, XAxis, YAxis } from "recharts";
 
 import { useGame, type RaceWithScores } from "@/lib/queries";
-import { type StartScore } from "@/lib/scoring";
+import { Button } from "@/components/ui/button";
 import { GAME_COLORS } from "@/lib/game-colors";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
@@ -14,6 +14,16 @@ import { Badge } from "@/components/ui/badge";
 // ─── chart config ─────────────────────────────────────────────────────────────
 
 const MAX_SCORE = 101; // OR14+FS14+CF18+SP12+EP6+HW5+KR5+DW8+TW6+PP5+RP3+GC5
+
+type ScoreModel = "travankan" | "egen";
+
+interface RankRow {
+  startId: string;
+  horseName: string;
+  startNumber: number;
+  scratched: boolean;
+  total: number;
+}
 
 const chartConfig = {
   pct: { label: "Score %" },
@@ -74,24 +84,26 @@ function makeYTick(color: string) {
 function RaceRank({
   scores,
   color,
+  relative,
 }: {
-  scores: StartScore[] | undefined;
+  scores: RankRow[] | undefined;
   color: string;
+  /** Scale bars against the race leader instead of MAX_SCORE. */
+  relative: boolean;
 }) {
   const YTick = useMemo(() => makeYTick(color), [color]);
 
-  const chartData = useMemo(
-    () =>
-      [...(scores ?? [])]
-        .filter((s) => !s.scratched)
-        .sort((a, b) => b.total - a.total)
-        .map((s) => ({
-          ...s,
-          label: `${s.startNumber} ${s.horseName}`,
-          pct: Math.round((s.total / MAX_SCORE) * 100),
-        })),
-    [scores],
-  );
+  const chartData = useMemo(() => {
+    const active = [...(scores ?? [])]
+      .filter((s) => !s.scratched)
+      .sort((a, b) => b.total - a.total);
+    const max = relative ? Math.max(active[0]?.total ?? 0, 1) : MAX_SCORE;
+    return active.map((s) => ({
+      ...s,
+      label: `${s.startNumber} ${s.horseName}`,
+      pct: Math.max(0, Math.round((s.total / max) * 100)),
+    }));
+  }, [scores, relative]);
 
   if (!chartData.length) {
     return <p className="text-muted-foreground text-sm p-4">No starters.</p>;
@@ -152,6 +164,7 @@ interface RankProps {
 
 export default function Rank({ gameId }: RankProps) {
   const { data, isLoading, isError } = useGame(gameId);
+  const [model, setModel] = useState<ScoreModel>("travankan");
 
   const color = GAME_COLORS[data?.type ?? ""] ?? "var(--primary)";
 
@@ -183,6 +196,22 @@ export default function Rank({ gameId }: RankProps) {
 
   return (
     <div className="p-4">
+      <div className="mb-4 flex gap-2">
+        <Button
+          size="sm"
+          variant={model === "travankan" ? "default" : "outline"}
+          onClick={() => setModel("travankan")}
+        >
+          Travankan
+        </Button>
+        <Button
+          size="sm"
+          variant={model === "egen" ? "default" : "outline"}
+          onClick={() => setModel("egen")}
+        >
+          Egen modell
+        </Button>
+      </div>
       <Tabs defaultValue={racesWithScores[0]?.id} className="flex-col">
         <TabsList className="flex-wrap h-auto gap-1 mb-4">
           {racesWithScores.map((race, index) => (
@@ -200,7 +229,11 @@ export default function Rank({ gameId }: RankProps) {
                 {race.distance} m · {race.startMethod} · {race.track?.condition}
               </p>
             </div>
-            <RaceRank scores={race.scores} color={color} />
+            <RaceRank
+              scores={model === "travankan" ? race.travankanScores : race.scores}
+              color={color}
+              relative={model === "travankan"}
+            />
           </TabsContent>
         ))}
       </Tabs>
